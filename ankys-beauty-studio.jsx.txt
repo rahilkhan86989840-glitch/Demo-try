@@ -1,0 +1,508 @@
+import { useState, useEffect, useRef } from "react";
+import { MapPin, Clock, Phone, Sparkles, Star, ChevronDown, X, CheckCircle, Calendar, User, Scissors, Heart, Crown } from "lucide-react";
+
+// ── Floating orb background ──────────────────────────────────────────────────
+const Orbs = () => (
+  <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div style={{
+      position:"absolute", width:600, height:600, borderRadius:"50%",
+      background:"radial-gradient(circle, rgba(255,182,193,0.45) 0%, rgba(255,218,185,0.2) 60%, transparent 100%)",
+      top:"-15%", left:"-10%", filter:"blur(60px)", animation:"floatA 12s ease-in-out infinite"
+    }}/>
+    <div style={{
+      position:"absolute", width:500, height:500, borderRadius:"50%",
+      background:"radial-gradient(circle, rgba(255,228,196,0.5) 0%, rgba(255,192,203,0.25) 60%, transparent 100%)",
+      bottom:"-10%", right:"-8%", filter:"blur(50px)", animation:"floatB 15s ease-in-out infinite"
+    }}/>
+    <div style={{
+      position:"absolute", width:350, height:350, borderRadius:"50%",
+      background:"radial-gradient(circle, rgba(221,160,221,0.35) 0%, transparent 70%)",
+      top:"40%", right:"20%", filter:"blur(40px)", animation:"floatC 10s ease-in-out infinite"
+    }}/>
+    <div style={{
+      position:"absolute", width:250, height:250, borderRadius:"50%",
+      background:"radial-gradient(circle, rgba(255,240,220,0.6) 0%, transparent 70%)",
+      top:"20%", right:"35%", filter:"blur(30px)", animation:"floatA 8s ease-in-out infinite reverse"
+    }}/>
+    <style>{`
+      @keyframes floatA { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(30px,-40px) scale(1.05)} }
+      @keyframes floatB { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-25px,35px) scale(0.95)} }
+      @keyframes floatC { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-20px)} }
+      @keyframes shimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
+      @keyframes pulse-glow { 0%,100%{box-shadow:0 0 20px rgba(255,130,150,0.4),0 0 60px rgba(255,130,150,0.15)} 50%{box-shadow:0 0 35px rgba(255,130,150,0.7),0 0 80px rgba(255,130,150,0.3)} }
+      @keyframes slideUp { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
+      @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+      @keyframes toastIn { from{opacity:0;transform:translateY(60px) scale(0.8)} to{opacity:1;transform:translateY(0) scale(1)} }
+      @keyframes sparkle { 0%,100%{opacity:0.3;transform:scale(0.8)} 50%{opacity:1;transform:scale(1.2)} }
+      @keyframes rotate-slow { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+      .glass {
+        background: rgba(255,255,255,0.25);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.45);
+        box-shadow: 0 8px 32px rgba(255,150,170,0.12), 0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+      }
+      .glass-dark {
+        background: rgba(255,255,255,0.18);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid rgba(255,255,255,0.35);
+        box-shadow: 0 16px 48px rgba(200,100,120,0.15), 0 4px 16px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.5);
+      }
+      .card-hover {
+        transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.35s ease;
+      }
+      .card-hover:hover {
+        transform: translateY(-8px) scale(1.015);
+        box-shadow: 0 24px 60px rgba(200,100,120,0.2), 0 8px 24px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.7);
+      }
+      .btn-glow {
+        background: linear-gradient(135deg, #ff6b8a, #ff9a7c, #ffb347);
+        background-size: 200% 200%;
+        animation: pulse-glow 2.5s ease-in-out infinite;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      .btn-glow:hover {
+        transform: translateY(-3px) scale(1.04);
+        box-shadow: 0 12px 40px rgba(255,107,138,0.6), 0 4px 16px rgba(0,0,0,0.15) !important;
+      }
+      .shimmer-text {
+        background: linear-gradient(90deg, #c8547a, #e8956d, #c87da0, #e8b06d, #c8547a);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: shimmer 4s linear infinite;
+      }
+      .service-pill {
+        transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+      }
+      .service-pill:hover {
+        transform: scale(1.05);
+        background: rgba(255,255,255,0.5) !important;
+      }
+      .input-glass {
+        background: rgba(255,255,255,0.4);
+        backdrop-filter: blur(10px);
+        border: 1.5px solid rgba(255,255,255,0.6);
+        transition: all 0.2s ease;
+        outline: none;
+      }
+      .input-glass:focus {
+        background: rgba(255,255,255,0.6);
+        border-color: rgba(255,107,138,0.6);
+        box-shadow: 0 0 0 3px rgba(255,107,138,0.15);
+      }
+      .select-glass {
+        background: rgba(255,255,255,0.4);
+        backdrop-filter: blur(10px);
+        border: 1.5px solid rgba(255,255,255,0.6);
+        appearance: none;
+        -webkit-appearance: none;
+        outline: none;
+        transition: all 0.2s ease;
+      }
+      .select-glass:focus {
+        background: rgba(255,255,255,0.6);
+        border-color: rgba(255,107,138,0.6);
+        box-shadow: 0 0 0 3px rgba(255,107,138,0.15);
+      }
+      .modal-overlay {
+        background: rgba(255,230,240,0.3);
+        backdrop-filter: blur(8px);
+      }
+      .reveal { animation: slideUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+      .reveal-2 { animation: slideUp 0.7s 0.15s cubic-bezier(0.16,1,0.3,1) both; }
+      .reveal-3 { animation: slideUp 0.7s 0.3s cubic-bezier(0.16,1,0.3,1) both; }
+      .reveal-4 { animation: slideUp 0.7s 0.45s cubic-bezier(0.16,1,0.3,1) both; }
+      .sparkle-icon { animation: sparkle 2s ease-in-out infinite; }
+      .section-title {
+        font-family: 'Georgia', serif;
+        letter-spacing: -0.02em;
+      }
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: rgba(255,220,230,0.2); }
+      ::-webkit-scrollbar-thumb { background: rgba(200,100,130,0.3); border-radius: 3px; }
+    `}</style>
+  </div>
+);
+
+// ── Data ────────────────────────────────────────────────────────────────────
+const SERVICES = [
+  { category: "Hair Care", icon: "✂️", color: "from-rose-100 to-pink-50", items: [
+    { name: "Haircut + Wash + Mask", price: "₹350", popular: true },
+    { name: "Shampoo & Conditioning", price: "₹150" },
+    { name: "Hair Spa Treatment", price: "₹450" },
+    { name: "Keratin Smoothing", price: "₹800" },
+  ]},
+  { category: "Face & Brows", icon: "✨", color: "from-amber-50 to-orange-50", items: [
+    { name: "Threading (Full Face)", price: "₹240" },
+    { name: "Facial Cleanup", price: "₹250", popular: true },
+    { name: "Beauty Makeover", price: "₹500" },
+    { name: "De-Tan Treatment", price: "₹350" },
+  ]},
+  { category: "Premium Makeup", icon: "👑", color: "from-purple-50 to-pink-50", items: [
+    { name: "Bridal Makeup", price: "₹3,500+", popular: true },
+    { name: "Airbrush Finish", price: "₹2,500+" },
+    { name: "Party Glam Look", price: "₹1,000+" },
+    { name: "Engagement Makeup", price: "₹2,000+" },
+  ]},
+];
+
+const ALL_SERVICES = SERVICES.flatMap(cat => cat.items.map(i => `${cat.category} — ${i.name} (${i.price})`));
+const TIME_SLOTS = ["9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM","6:00 PM","7:00 PM"];
+
+const TESTIMONIALS = [
+  { name: "Priya S.", text: "Best bridal makeup in Surat! Anky made me feel like a queen on my wedding day.", stars: 5 },
+  { name: "Meera K.", text: "The hair spa is absolutely divine. My hair has never felt so silky!", stars: 5 },
+  { name: "Sneha R.", text: "Amazing cleanup and threading service. Always leave feeling refreshed!", stars: 5 },
+];
+
+// ── Booking Modal ────────────────────────────────────────────────────────────
+const BookingModal = ({ onClose }) => {
+  const [form, setForm] = useState({ service: "", date: "", time: "", name: "", phone: "" });
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const handleSubmit = () => {
+    if (!form.service || !form.date || !form.time || !form.name || !form.phone) return;
+    setLoading(true);
+    setTimeout(() => { setLoading(false); setSubmitted(true); }, 1500);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay" onClick={onClose}>
+      <div
+        className="glass-dark rounded-3xl p-8 w-full max-w-lg relative"
+        style={{ animation: "toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both", maxHeight:"90vh", overflowY:"auto" }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Close */}
+        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/40 transition-colors">
+          <X size={16} style={{color:"#c8547a"}}/>
+        </button>
+
+        {submitted ? (
+          <div className="text-center py-8" style={{animation:"toastIn 0.5s cubic-bezier(0.34,1.56,0.64,1)"}}>
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style={{background:"linear-gradient(135deg,#ff6b8a,#ffb347)"}}>
+              <CheckCircle size={40} color="white"/>
+            </div>
+            <h3 className="text-2xl font-bold mb-2 shimmer-text section-title">Booking Confirmed!</h3>
+            <p style={{color:"#9b6b7a", fontSize:15}}>Thank you, <strong>{form.name}</strong>! Your appointment is set.</p>
+            <div className="mt-4 p-4 rounded-2xl" style={{background:"rgba(255,255,255,0.4)"}}>
+              <p style={{color:"#c8547a", fontSize:13, fontWeight:600}}>{form.service}</p>
+              <p style={{color:"#9b6b7a", fontSize:13}}>{form.date} at {form.time}</p>
+            </div>
+            <p style={{color:"#b89090", fontSize:12, marginTop:16}}>We'll WhatsApp you a reminder at {form.phone} 💕</p>
+            <button onClick={onClose} className="mt-6 btn-glow px-8 py-3 rounded-full text-white font-semibold text-sm" style={{border:"none",cursor:"pointer"}}>
+              Done
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles size={18} style={{color:"#e8956d"}} className="sparkle-icon"/>
+                <span style={{color:"#c8547a", fontSize:12, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase"}}>Reserve Your Spot</span>
+              </div>
+              <h2 className="section-title text-3xl font-bold shimmer-text">Book an Appointment</h2>
+            </div>
+
+            <div style={{display:"flex", flexDirection:"column", gap:16}}>
+              {/* Service */}
+              <div>
+                <label style={{fontSize:12, fontWeight:700, color:"#c8547a", letterSpacing:"0.08em", textTransform:"uppercase", display:"block", marginBottom:6}}>
+                  Service
+                </label>
+                <div style={{position:"relative"}}>
+                  <select className="select-glass w-full rounded-2xl px-4 py-3 text-sm" style={{color:"#6b4055", width:"100%"}}
+                    value={form.service} onChange={e=>setForm({...form,service:e.target.value})}>
+                    <option value="">Select a service…</option>
+                    {ALL_SERVICES.map(s=><option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <ChevronDown size={14} style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",color:"#c8547a",pointerEvents:"none"}}/>
+                </div>
+              </div>
+
+              {/* Date & Time */}
+              <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:12}}>
+                <div>
+                  <label style={{fontSize:12, fontWeight:700, color:"#c8547a", letterSpacing:"0.08em", textTransform:"uppercase", display:"block", marginBottom:6}}>Date</label>
+                  <div style={{position:"relative"}}>
+                    <input type="date" className="input-glass w-full rounded-2xl px-4 py-3 text-sm" style={{color:"#6b4055",width:"100%"}}
+                      min={today} value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/>
+                  </div>
+                </div>
+                <div>
+                  <label style={{fontSize:12, fontWeight:700, color:"#c8547a", letterSpacing:"0.08em", textTransform:"uppercase", display:"block", marginBottom:6}}>Time</label>
+                  <div style={{position:"relative"}}>
+                    <select className="select-glass w-full rounded-2xl px-4 py-3 text-sm" style={{color:"#6b4055",width:"100%"}}
+                      value={form.time} onChange={e=>setForm({...form,time:e.target.value})}>
+                      <option value="">Pick slot…</option>
+                      {TIME_SLOTS.map(t=><option key={t} value={t}>{t}</option>)}
+                    </select>
+                    <ChevronDown size={14} style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",color:"#c8547a",pointerEvents:"none"}}/>
+                  </div>
+                </div>
+              </div>
+
+              {/* Name */}
+              <div>
+                <label style={{fontSize:12, fontWeight:700, color:"#c8547a", letterSpacing:"0.08em", textTransform:"uppercase", display:"block", marginBottom:6}}>Your Name</label>
+                <div style={{position:"relative"}}>
+                  <User size={14} style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",color:"#c8879a"}}/>
+                  <input type="text" placeholder="Priya Sharma" className="input-glass w-full rounded-2xl pl-10 pr-4 py-3 text-sm" style={{color:"#6b4055",width:"100%"}}
+                    value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/>
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label style={{fontSize:12, fontWeight:700, color:"#c8547a", letterSpacing:"0.08em", textTransform:"uppercase", display:"block", marginBottom:6}}>Phone Number</label>
+                <div style={{position:"relative"}}>
+                  <Phone size={14} style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",color:"#c8879a"}}/>
+                  <input type="tel" placeholder="+91 98765 43210" className="input-glass w-full rounded-2xl pl-10 pr-4 py-3 text-sm" style={{color:"#6b4055",width:"100%"}}
+                    value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})}/>
+                </div>
+              </div>
+
+              <button
+                onClick={handleSubmit}
+                disabled={loading || !form.service || !form.date || !form.time || !form.name || !form.phone}
+                className="btn-glow w-full py-4 rounded-2xl text-white font-bold text-base mt-2"
+                style={{border:"none",cursor:"pointer",opacity:(loading||!form.service||!form.date||!form.time||!form.name||!form.phone)?0.6:1,transition:"opacity 0.2s"}}
+              >
+                {loading ? "Booking your spot…✨" : "Confirm Booking 💕"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Main App ────────────────────────────────────────────────────────────────
+export default function AnkysBeautyStudio() {
+  const [showModal, setShowModal] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
+
+  return (
+    <div style={{
+      minHeight:"100vh",
+      background:"linear-gradient(145deg, #fff0f3 0%, #fde8d8 25%, #fdf3e7 50%, #fce8f0 75%, #f8e8ff 100%)",
+      fontFamily:"'Georgia', serif",
+      position:"relative",
+    }}>
+      <Orbs/>
+
+      {/* ── NAV ── */}
+      <nav style={{position:"fixed",top:0,left:0,right:0,zIndex:40,padding:"12px 0"}}>
+        <div className="glass" style={{maxWidth:900,margin:"0 auto",borderRadius:100,padding:"12px 28px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#ff6b8a,#ffb347)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <Sparkles size={16} color="white"/>
+            </div>
+            <span style={{fontWeight:700,fontSize:16,color:"#c8547a",letterSpacing:"-0.01em"}}>Anky's</span>
+          </div>
+          <div style={{display:"flex",gap:24,alignItems:"center"}}>
+            {["Services","Gallery","Book"].map((item,i)=>(
+              <a key={i} href="#" onClick={e=>{e.preventDefault();if(item==="Book")setShowModal(true)}}
+                style={{fontSize:13,fontWeight:600,color:item==="Book"?"white":"#9b6b7a",
+                  padding:item==="Book"?"8px 20px":"8px 0",
+                  borderRadius:item==="Book"?100:0,
+                  background:item==="Book"?"linear-gradient(135deg,#ff6b8a,#ffb347)":"none",
+                  textDecoration:"none",transition:"all 0.2s ease",
+                  boxShadow:item==="Book"?"0 4px 15px rgba(255,107,138,0.4)":"none"
+                }}>
+                {item}
+              </a>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      {/* ── HERO ── */}
+      <section style={{paddingTop:120,paddingBottom:80,textAlign:"center",position:"relative",zIndex:1}}>
+        <div style={{maxWidth:700,margin:"0 auto",padding:"0 20px"}}>
+          {/* Badge */}
+          <div className="reveal" style={{display:"inline-flex",alignItems:"center",gap:8,
+            background:"rgba(255,255,255,0.4)",backdropFilter:"blur(12px)",
+            border:"1px solid rgba(255,255,255,0.6)",borderRadius:100,
+            padding:"8px 20px",marginBottom:28}}>
+            <Star size={12} style={{color:"#e8956d",fill:"#e8956d"}}/>
+            <span style={{fontSize:12,fontWeight:700,color:"#c8547a",letterSpacing:"0.1em",textTransform:"uppercase"}}>Surat's Premier Beauty Studio</span>
+            <Star size={12} style={{color:"#e8956d",fill:"#e8956d"}}/>
+          </div>
+
+          {/* Headline */}
+          <h1 className="reveal-2 section-title" style={{fontSize:"clamp(42px,8vw,80px)",fontWeight:700,lineHeight:1.1,marginBottom:20}}>
+            <span className="shimmer-text">Anky's</span>
+            <br/>
+            <span style={{color:"#8b5a6a",fontStyle:"italic"}}>Beauty Studio</span>
+          </h1>
+
+          <p className="reveal-3" style={{fontSize:17,color:"#9b7a88",lineHeight:1.7,marginBottom:40,maxWidth:480,margin:"0 auto 40px"}}>
+            Where every woman discovers her most radiant self. Hair, skin, bridal, and beyond — all crafted with love.
+          </p>
+
+          {/* CTA Cards */}
+          <div className="reveal-4" style={{display:"flex",gap:16,justifyContent:"center",flexWrap:"wrap"}}>
+            <button onClick={()=>setShowModal(true)} className="btn-glow"
+              style={{border:"none",cursor:"pointer",padding:"16px 40px",borderRadius:100,color:"white",fontSize:16,fontWeight:700,display:"flex",alignItems:"center",gap:8,fontFamily:"Georgia,serif"}}>
+              <Sparkles size={18}/> Book Now
+            </button>
+            <a href="tel:+919999999999" style={{textDecoration:"none"}}>
+              <div className="glass card-hover" style={{padding:"16px 32px",borderRadius:100,display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+                <Phone size={16} style={{color:"#c8547a"}}/>
+                <span style={{fontSize:15,fontWeight:600,color:"#c8547a"}}>Call Us</span>
+              </div>
+            </a>
+          </div>
+
+          {/* Floating stats */}
+          <div style={{display:"flex",gap:16,justifyContent:"center",marginTop:48,flexWrap:"wrap"}}>
+            {[["500+","Happy Clients"],["8+","Years of Excellence"],["4.9★","Google Rating"]].map(([n,l])=>(
+              <div key={l} className="glass" style={{padding:"14px 24px",borderRadius:20,textAlign:"center"}}>
+                <div style={{fontSize:20,fontWeight:800,color:"#c8547a",fontFamily:"Georgia,serif"}}>{n}</div>
+                <div style={{fontSize:11,color:"#9b7a88",fontWeight:600,letterSpacing:"0.05em"}}>{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SERVICES ── */}
+      <section style={{position:"relative",zIndex:1,padding:"40px 20px 80px",maxWidth:1000,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:48}}>
+          <p style={{fontSize:12,fontWeight:700,color:"#e8956d",letterSpacing:"0.15em",textTransform:"uppercase",marginBottom:10}}>Our Specialties</p>
+          <h2 className="section-title" style={{fontSize:"clamp(28px,5vw,44px)",fontWeight:700,color:"#8b5a6a"}}>Services & Pricing</h2>
+        </div>
+
+        {/* Tab selector */}
+        <div className="glass" style={{display:"flex",borderRadius:100,padding:4,maxWidth:480,margin:"0 auto 40px",gap:4}}>
+          {SERVICES.map((cat,i)=>(
+            <button key={i} onClick={()=>setActiveTab(i)}
+              style={{flex:1,padding:"10px 16px",borderRadius:100,border:"none",cursor:"pointer",
+                fontWeight:700,fontSize:13,fontFamily:"Georgia,serif",transition:"all 0.25s ease",
+                background:activeTab===i?"linear-gradient(135deg,#ff6b8a,#ffb347)":"transparent",
+                color:activeTab===i?"white":"#9b7a88",
+                boxShadow:activeTab===i?"0 4px 15px rgba(255,107,138,0.35)":"none"
+              }}>
+              {cat.icon} {cat.category.split(" ")[0]}
+            </button>
+          ))}
+        </div>
+
+        {/* Service cards */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:16}}>
+          {SERVICES[activeTab].items.map((item,i)=>(
+            <div key={i} className="glass card-hover" style={{borderRadius:24,padding:"24px 20px",position:"relative",cursor:"pointer"}}>
+              {item.popular && (
+                <div style={{position:"absolute",top:-10,right:16,
+                  background:"linear-gradient(135deg,#ff6b8a,#ffb347)",
+                  color:"white",fontSize:10,fontWeight:800,
+                  padding:"4px 12px",borderRadius:100,letterSpacing:"0.06em",
+                  boxShadow:"0 4px 12px rgba(255,107,138,0.4)"}}>
+                  ⭐ POPULAR
+                </div>
+              )}
+              <div style={{fontSize:28,marginBottom:12}}>{SERVICES[activeTab].icon}</div>
+              <div style={{fontSize:15,fontWeight:700,color:"#6b4055",marginBottom:4,lineHeight:1.3}}>{item.name}</div>
+              <div style={{fontSize:22,fontWeight:800,color:"#c8547a",fontFamily:"Georgia,serif"}}>{item.price}</div>
+              <button onClick={()=>setShowModal(true)} className="service-pill"
+                style={{marginTop:14,width:"100%",padding:"9px 0",borderRadius:100,border:"1.5px solid rgba(200,84,122,0.3)",
+                  background:"rgba(255,255,255,0.3)",color:"#c8547a",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"Georgia,serif"}}>
+                Book This →
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ── */}
+      <section style={{position:"relative",zIndex:1,padding:"0 20px 80px",maxWidth:1000,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:40}}>
+          <p style={{fontSize:12,fontWeight:700,color:"#e8956d",letterSpacing:"0.15em",textTransform:"uppercase",marginBottom:10}}>Love Notes</p>
+          <h2 className="section-title" style={{fontSize:"clamp(26px,4vw,38px)",fontWeight:700,color:"#8b5a6a"}}>What Our Clients Say</h2>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:16}}>
+          {TESTIMONIALS.map((t,i)=>(
+            <div key={i} className="glass card-hover" style={{borderRadius:24,padding:"28px 24px"}}>
+              <div style={{display:"flex",gap:3,marginBottom:14}}>
+                {Array.from({length:t.stars}).map((_,j)=>(<Star key={j} size={14} style={{color:"#f59e0b",fill:"#f59e0b"}}/>))}
+              </div>
+              <p style={{fontSize:14,color:"#7a5060",lineHeight:1.7,marginBottom:16,fontStyle:"italic"}}>"{t.text}"</p>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,#ffb3c6,#ffd4b8)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <Heart size={16} style={{color:"#c8547a",fill:"#c8547a"}}/>
+                </div>
+                <span style={{fontWeight:700,color:"#8b5a6a",fontSize:14}}>{t.name}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── LOCATION FOOTER ── */}
+      <section style={{position:"relative",zIndex:1,padding:"0 20px 40px",maxWidth:800,margin:"0 auto"}}>
+        <div className="glass-dark" style={{borderRadius:32,padding:"40px 36px",display:"flex",flexWrap:"wrap",gap:32,alignItems:"center",justifyContent:"space-between"}}>
+          <div>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+              <MapPin size={18} style={{color:"#c8547a"}}/>
+              <span style={{fontSize:12,fontWeight:700,color:"#c8547a",letterSpacing:"0.1em",textTransform:"uppercase"}}>Find Us</span>
+            </div>
+            <h3 className="section-title" style={{fontSize:22,fontWeight:700,color:"#6b4055",marginBottom:6}}>Anky's Beauty Studio</h3>
+            <p style={{fontSize:15,color:"#9b7a88",lineHeight:1.6}}>G-1, Yash Plaza,<br/>Nanpura, Surat — 395001</p>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:12}}>
+              <Clock size={14} style={{color:"#e8956d"}}/>
+              <span style={{fontSize:13,color:"#9b7a88"}}>Mon–Sat: 9:00 AM – 8:00 PM</span>
+            </div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            <a href="https://maps.google.com?q=Yash+Plaza+Nanpura+Surat" target="_blank" rel="noreferrer"
+              className="btn-glow" style={{
+                display:"inline-flex",alignItems:"center",gap:8,
+                padding:"14px 28px",borderRadius:100,
+                color:"white",fontWeight:700,fontSize:14,
+                textDecoration:"none",fontFamily:"Georgia,serif",
+                border:"none",cursor:"pointer"
+              }}>
+              <MapPin size={16}/> Get Directions
+            </a>
+            <button onClick={()=>setShowModal(true)}
+              className="glass card-hover"
+              style={{display:"inline-flex",alignItems:"center",justifyContent:"center",gap:8,
+                padding:"14px 28px",borderRadius:100,cursor:"pointer",border:"none",
+                color:"#c8547a",fontWeight:700,fontSize:14,fontFamily:"Georgia,serif"}}>
+              <Calendar size={16}/> Book Now
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div style={{textAlign:"center",marginTop:24}}>
+          <p style={{fontSize:12,color:"#b89090",fontStyle:"italic"}}>Made with 💕 for every woman's glow-up journey · Surat, Gujarat</p>
+        </div>
+      </section>
+
+      {/* ── FLOATING BOOK BUTTON (mobile) ── */}
+      <button onClick={()=>setShowModal(true)}
+        className="btn-glow"
+        style={{
+          position:"fixed",bottom:24,right:24,zIndex:40,
+          width:60,height:60,borderRadius:"50%",
+          border:"none",cursor:"pointer",
+          display:"flex",alignItems:"center",justifyContent:"center",
+          boxShadow:"0 8px 32px rgba(255,107,138,0.5)"
+        }}>
+        <Sparkles size={24} color="white"/>
+      </button>
+
+      {/* ── MODAL ── */}
+      {showModal && <BookingModal onClose={()=>setShowModal(false)}/>}
+    </div>
+  );
+}
